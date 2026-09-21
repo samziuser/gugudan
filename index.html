@@ -14,14 +14,13 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* clamp() 및 vh, vw 단위를 활용한 화면 반응형 설정 */
         body {
             background-color: #eef2ff;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            min-height: 100dvh; /* 모바일 브라우저 주소창 고려 */
+            min-height: 100dvh;
             margin: 0;
             padding: clamp(10px, 3vw, 20px);
         }
@@ -122,7 +121,6 @@
             height: 100%;
             background-color: #ef4444;
             width: 100%;
-            transition: width linear;
         }
 
         .quiz-box {
@@ -134,7 +132,6 @@
             border-radius: 16px;
         }
 
-        /* 피드백 메시지 반응형 */
         .feedback-box {
             min-height: clamp(30px, 6vw, 38px);
             font-size: clamp(0.95rem, 3.5vw, 1.2rem);
@@ -148,7 +145,6 @@
         .feedback-wrong { color: #dc2626; }
         .feedback-correct { color: #16a34a; }
 
-        /* 반응형 가상 키패드 */
         .keypad {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -192,7 +188,6 @@
         .screen { display: none; }
         .active { display: block; }
 
-        /* 화면이 작은 모바일 기기 반응형 최적화 */
         @media (max-height: 650px) {
             .quiz-box { font-size: 2.2rem; margin: 4px 0; padding: 6px; }
             .key-btn { padding: 8px 0; font-size: 1.1rem; }
@@ -204,7 +199,6 @@
 <body>
 
 <div class="card">
-    <!-- 메인 타이틀 -->
     <h1 class="main-title">꿈나무반 구구단 완전 정복 🌳✨</h1>
 
     <!-- 1. 로그인 화면 -->
@@ -239,12 +233,10 @@
 
         <div class="quiz-box" id="problem-display">2 × 1 = ?</div>
         
-        <!-- 정답/오답 피드백 영역 -->
         <div class="feedback-box" id="feedback-message"></div>
 
         <input type="number" id="answer-input" placeholder="정답" readonly>
         
-        <!-- 화면 키패드 -->
         <div class="keypad">
             <button class="key-btn" onclick="appendNum(1)">1</button>
             <button class="key-btn" onclick="appendNum(2)">2</button>
@@ -291,11 +283,11 @@
     let isProcessing = false;
     
     let tableStats = {};
-    let timer = null;
+    let timerTimeout = null;
+    let timerInterval = null;
     const TOTAL_PROBLEMS = 30;
     const PASS_THRESHOLD = 25;
 
-    // 한 문제당 제한시간 설정 (초수: 8초, 중수: 6초, 고수: 4초)
     const LEVEL_CONFIG = {
         '초수': { time: 8 },
         '중수': { time: 6 },
@@ -347,6 +339,8 @@
     }
 
     function nextProblem() {
+        clearTimer(); // 이전 타이머 및 애니메이션 완전 리셋
+
         if (problemCount >= TOTAL_PROBLEMS) {
             finishQuiz();
             return;
@@ -371,21 +365,36 @@
         startTimer();
     }
 
-    function startTimer() {
-        clearInterval(timer);
-        const timerBar = document.getElementById('timer-bar');
-        const timeLimit = LEVEL_CONFIG[currentLevel].time * 1000;
+    function clearTimer() {
+        if (timerTimeout) clearTimeout(timerTimeout);
+        if (timerInterval) clearInterval(timerInterval);
         
+        const timerBar = document.getElementById('timer-bar');
         timerBar.style.transition = 'none';
         timerBar.style.width = '100%';
-        
-        setTimeout(() => {
-            timerBar.style.transition = `width ${timeLimit}ms linear`;
-            timerBar.style.width = '0%';
-        }, 10);
+    }
 
-        // 시간 초과 시 처리
-        timer = setTimeout(() => {
+    function startTimer() {
+        clearTimer();
+        
+        const timerBar = document.getElementById('timer-bar');
+        const maxTimeMs = LEVEL_CONFIG[currentLevel].time * 1000;
+        let elapsedMs = 0;
+        const intervalMs = 50; // 0.05초 단위로 타이머 바 부드럽게 갱신
+
+        // 1. 프레임 단위로 타이머 바 정확히 감소
+        timerInterval = setInterval(() => {
+            elapsedMs += intervalMs;
+            const remainingPercent = Math.max(0, ((maxTimeMs - elapsedMs) / maxTimeMs) * 100);
+            timerBar.style.width = remainingPercent + '%';
+
+            if (elapsedMs >= maxTimeMs) {
+                clearInterval(timerInterval);
+            }
+        }, intervalMs);
+
+        // 2. 시간 초과 시 다음 문제로 넘어가는 타임아웃
+        timerTimeout = setTimeout(() => {
             if (!isProcessing) {
                 isProcessing = true;
                 wrongCount++;
@@ -394,7 +403,7 @@
                 showFeedback(`⏰ 시간 초과! 정답은 ${currentAns}입니다.`, false);
                 setTimeout(nextProblem, 1200);
             }
-        }, timeLimit);
+        }, maxTimeMs);
     }
 
     function appendNum(num) {
@@ -416,7 +425,7 @@
         const inputVal = document.getElementById('answer-input').value;
         if (inputVal === '') return;
 
-        clearInterval(timer);
+        clearTimer(); // 답을 내면 즉시 타이머 멈춤
         isProcessing = true;
         
         const userAns = parseInt(inputVal);
@@ -440,7 +449,7 @@
     }
 
     function finishQuiz() {
-        clearInterval(timer);
+        clearTimer();
         const isPassed = correctCount >= PASS_THRESHOLD;
         
         if (isPassed) {
@@ -520,7 +529,6 @@
         }).catch(err => console.error("전송 실패:", err));
     }
 
-    // 키보드 엔터 및 숫자 입력 지원
     document.addEventListener('keydown', (e) => {
         if (document.getElementById('screen-quiz').classList.contains('active')) {
             if (e.key >= '0' && e.key <= '9') {
