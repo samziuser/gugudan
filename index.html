@@ -121,7 +121,7 @@
             height: 100%;
             background-color: #ef4444;
             width: 100%;
-            transition: none; /* JS 제어로 직접 조절 */
+            transition: none;
         }
 
         .quiz-box {
@@ -283,8 +283,9 @@
     let currentAns = 0;
     let isProcessing = false;
     
+    let problemDeck = []; // 중복 방지용 전체 문제 덱
     let tableStats = {};
-    let animFrameId = null; // 프레임 타이머 ID
+    let animFrameId = null;
     let startTime = 0;
     const TOTAL_PROBLEMS = 30;
     const PASS_THRESHOLD = 25;
@@ -324,11 +325,40 @@
         showScreen('screen-level');
     }
 
+    // 2~9단 중복 없는 72개 문제 생성 및 셔플 로직
+    function buildProblemDeck() {
+        let deck = [];
+        for (let num1 = 2; num1 <= 9; num1++) {
+            for (let num2 = 1; num2 <= 9; num2++) {
+                deck.push({ num1, num2, ans: num1 * num2 });
+            }
+        }
+        
+        // 피셔-예이츠 셔플 알고리즘
+        for (let i = deck.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [deck[i], deck[j]] = [deck[j], deck[i]];
+        }
+
+        // 같은 단이 연속 3번 이상 안 겹치도록 미세 조정
+        for (let i = 1; i < deck.length - 1; i++) {
+            if (deck[i].num1 === deck[i - 1].num1 && deck[i].num1 === deck[i + 1].num1) {
+                const swapIdx = (i + 5) % deck.length;
+                [deck[i], deck[swapIdx]] = [deck[swapIdx], deck[i]];
+            }
+        }
+
+        return deck;
+    }
+
     function startQuiz(level) {
         currentLevel = level;
         problemCount = 0;
         correctCount = 0;
         wrongCount = 0;
+
+        // 30개 문제 무작위 덱 생성 (중복 제로)
+        problemDeck = buildProblemDeck();
 
         tableStats = {};
         for (let i = 2; i <= 9; i++) {
@@ -347,7 +377,7 @@
     }
 
     function nextProblem() {
-        stopTimer(); // 진행 중인 타이머 즉시 정지
+        stopTimer();
 
         if (problemCount >= TOTAL_PROBLEMS) {
             finishQuiz();
@@ -361,20 +391,19 @@
         document.getElementById('feedback-message').innerText = '';
         document.getElementById('feedback-message').className = 'feedback-box';
 
-        currentNum1 = Math.floor(Math.random() * 8) + 2; // 2~9단
-        const num2 = Math.floor(Math.random() * 9) + 1;
-        currentAns = currentNum1 * num2;
+        // 덱에서 중복 없는 문제 추출
+        const prob = problemDeck.pop();
+        currentNum1 = prob.num1;
+        currentAns = prob.ans;
 
         tableStats[currentNum1].total++;
 
-        document.getElementById('problem-display').innerText = `${currentNum1} × ${num2} = ?`;
+        document.getElementById('problem-display').innerText = `${prob.num1} × ${prob.num2} = ?`;
         document.getElementById('answer-input').value = '';
 
-        // 타이머 바를 우선 100%로 확실히 고정한 후 타이머 시작
         const timerBar = document.getElementById('timer-bar');
         timerBar.style.width = '100%';
 
-        // 브라우저가 화면을 새로 그리는 즉시 정밀 타이머 작동
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 startTimer();
@@ -386,7 +415,7 @@
         stopTimer();
         
         const timerBar = document.getElementById('timer-bar');
-        const duration = LEVEL_CONFIG[currentLevel].time * 1000; // ms
+        const duration = LEVEL_CONFIG[currentLevel].time * 1000;
         startTime = performance.now();
 
         function updateTimer(now) {
@@ -400,7 +429,6 @@
                     animFrameId = requestAnimationFrame(updateTimer);
                 }
             } else {
-                // 시간 초과 발생시
                 if (!isProcessing) {
                     isProcessing = true;
                     wrongCount++;
@@ -434,7 +462,7 @@
         const inputVal = document.getElementById('answer-input').value;
         if (inputVal === '') return;
 
-        stopTimer(); // 답안 제출 시 타이머 즉시 정지
+        stopTimer();
         isProcessing = true;
         
         const userAns = parseInt(inputVal);
