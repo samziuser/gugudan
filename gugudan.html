@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>꿈나무반 구구단 완전 정복 🌳✨</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: Jua & Gaegu -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@700&family=Jua&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Canvas Confetti for Celebration -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Jua', sans-serif;
+            background: linear-gradient(135deg, #e0f2fe 0%, #f0fdf4 50%, #fef3c7 100%);
+            touch-action: manipulation;
+            user-select: none;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border: 4px solid #10b981;
+            box-shadow: 0 20px 35px -10px rgba(16, 185, 129, 0.25);
+        }
+
+        .btn-bounce {
+            transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-bounce:active {
+            transform: scale(0.95) translateY(2px);
+        }
+
+        /* Smooth CSS Progress Bar for Per-Question Countdown */
+        #timer-bar {
+            will-change: width;
+        }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-3 md:p-6">
+
+    <!-- Main Container Card -->
+    <div class="glass-card w-full max-w-lg rounded-3xl p-5 md:p-8 relative overflow-hidden my-auto">
+        
+        <!-- App Title Header -->
+        <header class="text-center mb-5">
+            <div class="inline-block bg-emerald-100 text-emerald-800 text-xs md:text-sm px-3 py-1 rounded-full font-bold mb-2 shadow-sm">
+                🌱 초등학교 2학년 필수 구구단
+            </div>
+            <h1 class="text-3xl md:text-4xl text-emerald-600 font-extrabold tracking-wide drop-shadow-sm flex items-center justify-center gap-2">
+                <span>🌳</span> 꿈나무반 구구단 <span class="text-amber-500">완전 정복</span>
+            </h1>
+        </header>
+
+        <!-- SCREEN 1: LOGIN -->
+        <div id="screen-login" class="space-y-6 text-center">
+            <div class="bg-amber-50 rounded-2xl p-4 border-2 border-amber-200">
+                <p class="text-amber-800 text-lg md:text-xl">
+                    반가워요! 구구단 탐험을 시작할<br><span class="text-2xl text-emerald-600 font-bold">닉네임</span>을 입력해 주세요!
+                </p>
+            </div>
+
+            <div class="space-y-2">
+                <div class="relative">
+                    <i class="fa-solid fa-user-astronaut absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 text-2xl"></i>
+                    <input type="text" id="nickname-input" maxlength="8" 
+                           placeholder="닉네임 입력 (예: 구구대장)" 
+                           class="w-full text-center text-xl md:text-2xl py-3 pl-12 pr-4 bg-white border-3 border-emerald-300 rounded-2xl focus:outline-none focus:border-emerald-500 shadow-inner">
+                </div>
+                <p class="text-xs text-gray-400">최대 8자까지 입력 가능합니다.</p>
+            </div>
+
+            <button onclick="submitNickname()" class="btn-bounce w-full bg-emerald-500 hover:bg-emerald-600 text-white text-xl py-4 rounded-2xl shadow-lg font-bold border-b-4 border-emerald-700 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-play"></i> 모험 시작하기!
+            </button>
+        </div>
+
+        <!-- SCREEN 2: LEVEL SELECT -->
+        <div id="screen-level" class="hidden space-y-5 text-center">
+            <div class="bg-emerald-50 rounded-2xl p-3 border border-emerald-200">
+                <p id="welcome-message" class="text-emerald-800 text-lg font-bold">환영합니다!</p>
+                <p class="text-gray-600 text-sm">30문제 중 25개 이상 맞추면 다음 단계 해제!</p>
+            </div>
+
+            <div class="space-y-3">
+                <!-- Level 1: 초수 (8초) -->
+                <button id="btn-easy" onclick="selectLevel('초수')" 
+                        class="btn-bounce w-full bg-blue-500 hover:bg-blue-600 text-white p-4 rounded-2xl shadow-md border-b-4 border-blue-700 flex items-center justify-between">
+                    <div class="text-left">
+                        <div class="text-2xl font-bold">🌱 초수 단계</div>
+                        <div class="text-xs text-blue-100">1문제당 8초</div>
+                    </div>
+                    <span class="bg-white text-blue-600 text-sm px-3 py-1 rounded-full font-bold">도전 가능</span>
+                </button>
+
+                <!-- Level 2: 중수 (6초) -->
+                <button id="btn-medium" onclick="selectLevel('중수')" disabled 
+                        class="btn-bounce w-full bg-amber-500 hover:bg-amber-600 disabled:bg-gray-300 disabled:border-gray-400 disabled:cursor-not-allowed text-white p-4 rounded-2xl shadow-md border-b-4 border-amber-700 flex items-center justify-between">
+                    <div class="text-left">
+                        <div class="text-2xl font-bold flex items-center gap-2">
+                            <span>🌿 중수 단계</span>
+                            <i id="lock-icon-medium" class="fa-solid fa-lock text-sm"></i>
+                        </div>
+                        <div class="text-xs text-amber-100">1문제당 6초</div>
+                    </div>
+                    <span id="badge-medium" class="bg-amber-100 text-amber-800 text-sm px-3 py-1 rounded-full font-bold">잠김 🔒</span>
+                </button>
+
+                <!-- Level 3: 고수 (4초) -->
+                <button id="btn-hard" onclick="selectLevel('고수')" disabled 
+                        class="btn-bounce w-full bg-rose-500 hover:bg-rose-600 disabled:bg-gray-300 disabled:border-gray-400 disabled:cursor-not-allowed text-white p-4 rounded-2xl shadow-md border-b-4 border-rose-700 flex items-center justify-between">
+                    <div class="text-left">
+                        <div class="text-2xl font-bold flex items-center gap-2">
+                            <span>🌳 고수 단계</span>
+                            <i id="lock-icon-hard" class="fa-solid fa-lock text-sm"></i>
+                        </div>
+                        <div class="text-xs text-rose-100">1문제당 4초</div>
+                    </div>
+                    <span id="badge-hard" class="bg-rose-100 text-rose-800 text-sm px-3 py-1 rounded-full font-bold">잠김 🔒</span>
+                </button>
+            </div>
+
+            <button onclick="showScreen('screen-login')" class="text-sm text-gray-500 hover:text-gray-700 underline pt-2">
+                <i class="fa-solid fa-arrow-left"></i> 닉네임 다시 입력하기
+            </button>
+        </div>
+
+        <!-- SCREEN 3: ACTIVE QUIZ -->
+        <div id="screen-quiz" class="hidden space-y-4">
+            <!-- Top Status -->
+            <div class="flex justify-between items-center text-sm md:text-base font-bold text-gray-700 bg-gray-100 px-4 py-2 rounded-xl">
+                <span id="quiz-level-badge" class="bg-emerald-500 text-white px-2.5 py-0.5 rounded-lg text-xs">초수 (8초)</span>
+                <span><i class="fa-solid fa-list-check text-emerald-600"></i> 문제: <span id="quiz-progress">1/30</span></span>
+                <span><i class="fa-solid fa-circle-check text-green-500"></i> 맞은 개수: <span id="quiz-correct-count" class="text-green-600">0</span></span>
+            </div>
+
+            <!-- Timer Countdown Bar -->
+            <div class="w-full bg-gray-200 h-4 rounded-full overflow-hidden p-0.5 border border-gray-300">
+                <div id="timer-bar" class="bg-rose-500 h-full rounded-full w-full"></div>
+            </div>
+
+            <!-- Problem Box -->
+            <div class="bg-amber-50 rounded-2xl p-5 text-center border-2 border-amber-300 shadow-inner">
+                <div id="problem-display" class="text-5xl md:text-6xl font-black text-slate-800 tracking-wider">
+                    2 × 1 = ?
+                </div>
+            </div>
+
+            <!-- Real-Time Feedback Overlay -->
+            <div id="feedback-message" class="min-h-[32px] text-center text-lg font-bold"></div>
+
+            <!-- Input & Confirmation Button -->
+            <div class="flex gap-2">
+                <input type="number" id="answer-input" placeholder="정답 입력" readonly
+                       class="w-full text-center text-3xl font-bold py-2 bg-white border-3 border-emerald-400 rounded-2xl focus:outline-none focus:border-emerald-600 shadow-sm">
+                <button onclick="submitAnswer()" class="btn-bounce bg-emerald-500 hover:bg-emerald-600 text-white text-xl px-6 rounded-2xl font-bold border-b-4 border-emerald-700">
+                    확인
+                </button>
+            </div>
+
+            <!-- On-Screen Keypad -->
+            <div class="grid grid-cols-3 gap-2 pt-1">
+                <button onclick="appendNum(1)" class="btn-bounce bg-gray-100 hover:bg-gray-200 text-2xl py-3 rounded-xl font-bold border-b-2 border-gray-300">1</button>
+                <button onclick="appendNum(2)" class="btn-bounce bg-gray-100 hover:bg-gray-200 text-2xl py-3 rounded-xl font-bold border-b-2 border-gray-300">2</button>
+                <button onclick="appendNum(3)" class="btn-bounce bg-gray-100 hover:bg-gray-200 text-2xl py-3 rounded-xl font-bold border-b-2 border-gray-300">3</button>
+                <button onclick="appendNum(4)" class="btn-bounce bg-gray-100 hover:bg-gray-200 text-2xl py-3 rounded-xl font-bold border-b-2 border-gray-300">4</button>
+                <button onclick="appendNum(5)" class="btn-bounce bg-gray-100 hover:bg-gray-200 text-2xl py-3 rounded-xl font-bold border-b-2 border-gray-300">5</button>
+                <button onclick="appendNum(6)" class="btn-bounce bg-gray-100 hover:bg-gray-200 text-2xl py-3 rounded-xl font-bold border-b-2 border-gray-300">6</button>
+                <button onclick="appendNum(7)" class="btn-bounce bg-gray-100 hover:bg-gray-200 text-2xl py-3 rounded-xl font-bold border-b-2 border-gray-300">7</button>
+                <button onclick="appendNum(8)" class="btn-bounce bg-gray-100 hover:bg-gray-200 text-2xl py-3 rounded-xl font-bold border-b-2 border-gray-300">8</button>
+                <button onclick="appendNum(9)" class="btn-bounce bg-gray-100 hover:bg-gray-200 text-2xl py-3 rounded-xl font-bold border-b-2 border-gray-300">9</button>
+                <button onclick="clearNum()" class="btn-bounce bg-rose-100 hover:bg-rose-200 text-rose-700 text-xl py-3 rounded-xl font-bold border-b-2 border-rose-300">지움</button>
+                <button onclick="appendNum(0)" class="btn-bounce bg-gray-100 hover:bg-gray-200 text-2xl py-3 rounded-xl font-bold border-b-2 border-gray-300">0</button>
+                <button onclick="submitAnswer()" class="btn-bounce bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xl py-3 rounded-xl font-bold border-b-2 border-emerald-300">확인</button>
+            </div>
+        </div>
+
+        <!-- SCREEN 4: RESULT -->
+        <div id="screen-result" class="hidden space-y-5 text-center">
+            <div id="result-header-card" class="rounded-2xl p-5 border-2 space-y-2">
+                <div id="result-icon" class="text-5xl">🎉</div>
+                <h2 id="result-title" class="text-3xl font-extrabold">통과 성공!</h2>
+                <p id="result-desc" class="text-gray-700 text-lg">30문제 중 28문제를 맞췄어요!</p>
+            </div>
+
+            <div class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 text-left space-y-2">
+                <div class="flex items-center gap-2 text-slate-800 text-lg font-bold border-b border-slate-200 pb-2">
+                    <i class="fa-solid fa-chart-pie text-emerald-600"></i>
+                    <span>약점 분석 리포트 (2단~9단)</span>
+                </div>
+                <div id="weakness-report-content" class="text-sm space-y-2"></div>
+            </div>
+
+            <div id="sheet-sync-status" class="text-xs text-gray-500 flex items-center justify-center gap-1">
+                <i class="fa-solid fa-cloud-arrow-up"></i> 결과 저장 중...
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="selectLevel(currentLevel)" class="btn-bounce flex-1 bg-amber-500 hover:bg-amber-600 text-white text-lg py-3 rounded-2xl font-bold border-b-4 border-amber-700">
+                    <i class="fa-solid fa-rotate-right"></i> 다시 도전
+                </button>
+                <button onclick="showScreen('screen-level')" class="btn-bounce flex-1 bg-emerald-500 hover:bg-emerald-600 text-white text-lg py-3 rounded-2xl font-bold border-b-4 border-emerald-700">
+                    <i class="fa-solid fa-list"></i> 단계 선택
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ★ 구글 앱스클립트 웹앱 URL을 이곳 1곳에 입력하세요 ★
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzjN-RSOG7j8SPesHvot4-a7O6WbJc6sjXKoyzd-fVg55077Tohl7m3AljFK3A6_4G-/exec";
+
+        // Application State
+        let nickname = "";
+        let currentLevel = "초수";
+        let unlockedLevel = 1;
+
+        let problemCount = 0;
+        let correctCount = 0;
+        let wrongCount = 0;
+        let currentNum1 = 0;
+        let currentNum2 = 0;
+        let currentAns = 0;
+        let isProcessing = false;
+
+        let problemDeck = [];
+        let tableStats = {};
+        let questionTimer = null;
+        let animationFrameId = null;
+
+        const TOTAL_PROBLEMS = 30;
+        const PASS_THRESHOLD = 25;
+
+        // Level Per-Question Limits in Seconds
+        const LEVEL_CONFIG = {
+            '초수': { time: 8, label: '초수 (8초)' },
+            '중수': { time: 6, label: '중수 (6초)' },
+            '고수': { time: 4, label: '고수 (4초)' }
+        };
+
+        function showScreen(screenId) {
+            document.querySelectorAll('#screen-login, #screen-level, #screen-quiz, #screen-result')
+                .forEach(s => s.classList.add('hidden'));
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+
+        // Screen 1: Login
+        function submitNickname() {
+            const input = document.getElementById('nickname-input').value.trim();
+            if (!input) {
+                alert('✨ 닉네임을 입력해 주세요!');
+                return;
+            }
+            nickname = input;
+            document.getElementById('welcome-message').innerText = `👋 ${nickname} 어린이, 반가워요!`;
+            updateLevelLocks();
+            showScreen('screen-level');
+        }
+
+        // Screen 2: Level Selection
+        function updateLevelLocks() {
+            const btnMed = document.getElementById('btn-medium');
+            const badgeMed = document.getElementById('badge-medium');
+            const lockMed = document.getElementById('lock-icon-medium');
+
+            const btnHard = document.getElementById('btn-hard');
+            const badgeHard = document.getElementById('badge-hard');
+            const lockHard = document.getElementById('lock-icon-hard');
+
+            if (unlockedLevel >= 2) {
+                btnMed.disabled = false;
+                badgeMed.innerText = "도전 가능";
+                badgeMed.className = "bg-white text-amber-600 text-sm px-3 py-1 rounded-full font-bold";
+                if (lockMed) lockMed.classList.remove('fa-lock');
+            }
+
+            if (unlockedLevel >= 3) {
+                btnHard.disabled = false;
+                badgeHard.innerText = "도전 가능";
+                badgeHard.className = "bg-white text-rose-600 text-sm px-3 py-1 rounded-full font-bold";
+                if (lockHard) lockHard.classList.remove('fa-lock');
+            }
+        }
+
+        /* Improved Non-Repeating Random Problem Deck Generator */
+        function generateRandomDeck() {
+            let deck = [];
+            let allPairs = [];
+
+            // Build full set of 2~9 table multiplication pairs (72 combinations)
+            for (let t = 2; t <= 9; t++) {
+                for (let n = 1; n <= 9; n++) {
+                    allPairs.push({ t, n });
+                }
+            }
+
+            // Shuffle full set using Fisher-Yates
+            for (let i = allPairs.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [allPairs[i], allPairs[j]] = [allPairs[j], allPairs[i]];
+            }
+
+            // Pick 30 problems ensuring no consecutive same-table duplicates if possible
+            let lastTable = 0;
+            while (deck.length < TOTAL_PROBLEMS && allPairs.length > 0) {
+                let foundIndex = allPairs.findIndex(pair => pair.t !== lastTable);
+                if (foundIndex === -1) foundIndex = 0; // fallback
+
+                const picked = allPairs.splice(foundIndex, 1)[0];
+                deck.push(picked);
+                lastTable = picked.t;
+            }
+
+            return deck;
+        }
+
+        function selectLevel(level) {
+            currentLevel = level;
+            problemCount = 0;
+            correctCount = 0;
+            wrongCount = 0;
+
+            tableStats = {};
+            for (let i = 2; i <= 9; i++) {
+                tableStats[i] = { total: 0, wrong: 0 };
+            }
+
+            problemDeck = generateRandomDeck();
+            document.getElementById('quiz-level-badge').innerText = LEVEL_CONFIG[level].label;
+            showScreen('screen-quiz');
+            nextProblem();
+        }
+
+        // Screen 3: Quiz Engine
+        function nextProblem() {
+            if (problemCount >= TOTAL_PROBLEMS) {
+                finishQuiz();
+                return;
+            }
+
+            isProcessing = false;
+            problemCount++;
+
+            document.getElementById('quiz-progress').innerText = `${problemCount}/${TOTAL_PROBLEMS}`;
+            document.getElementById('quiz-correct-count').innerText = correctCount;
+            
+            const fb = document.getElementById('feedback-message');
+            fb.innerText = '';
+            fb.className = 'min-h-[32px] text-center text-lg font-bold';
+
+            // Extract question from shuffled deck
+            const pair = problemDeck[problemCount - 1];
+            currentNum1 = pair.t;
+            currentNum2 = pair.n;
+            currentAns = currentNum1 * currentNum2;
+
+            tableStats[currentNum1].total++;
+
+            document.getElementById('problem-display').innerText = `${currentNum1} × ${currentNum2} = ?`;
+            document.getElementById('answer-input').value = '';
+
+            startPerQuestionTimer();
+        }
+
+        /* Precise Per-Question Timer with Dynamic CSS Bar Animation */
+        function startPerQuestionTimer() {
+            clearExistingTimers();
+
+            const timerBar = document.getElementById('timer-bar');
+            const durationMs = LEVEL_CONFIG[currentLevel].time * 1000;
+            const startTime = Date.now();
+
+            timerBar.style.transition = 'none';
+            timerBar.style.width = '100%';
+
+            function updateBar() {
+                const elapsed = Date.now() - startTime;
+                const remainingRatio = Math.max(0, (durationMs - elapsed) / durationMs);
+                timerBar.style.width = `${remainingRatio * 100}%`;
+
+                if (remainingRatio > 0 && !isProcessing) {
+                    animationFrameId = requestAnimationFrame(updateBar);
+                }
+            }
+
+            animationFrameId = requestAnimationFrame(updateBar);
+
+            // Timeout handles unanswered timeout
+            questionTimer = setTimeout(() => {
+                if (!isProcessing) {
+                    isProcessing = true;
+                    wrongCount++;
+                    tableStats[currentNum1].wrong++;
+
+                    showFeedback(`⏰ 시간 초과! 정답은 ${currentAns}입니다.`, false);
+                    setTimeout(nextProblem, 1100);
+                }
+            }, durationMs);
+        }
+
+        function clearExistingTimers() {
+            if (questionTimer) clearTimeout(questionTimer);
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        }
+
+        function appendNum(num) {
+            if (isProcessing) return;
+            const input = document.getElementById('answer-input');
+            if (input.value.length < 3) {
+                input.value += num;
+            }
+        }
+
+        function clearNum() {
+            if (isProcessing) return;
+            document.getElementById('answer-input').value = '';
+        }
+
+        function submitAnswer() {
+            if (isProcessing) return;
+
+            const inputVal = document.getElementById('answer-input').value;
+            if (inputVal === '') return;
+
+            clearExistingTimers();
+            isProcessing = true;
+
+            const userAns = parseInt(inputVal);
+
+            if (userAns === currentAns) {
+                correctCount++;
+                showFeedback('🎉 정답이에요!', true);
+                setTimeout(nextProblem, 400);
+            } else {
+                wrongCount++;
+                tableStats[currentNum1].wrong++;
+                showFeedback(`😅 아쉬워요! 정답은 ${currentAns}입니다.`, false);
+                setTimeout(nextProblem, 1100);
+            }
+        }
+
+        function showFeedback(msg, isCorrect) {
+            const fb = document.getElementById('feedback-message');
+            fb.innerText = msg;
+            fb.className = isCorrect 
+                ? 'min-h-[32px] text-center text-lg font-bold text-emerald-600' 
+                : 'min-h-[32px] text-center text-lg font-bold text-rose-600';
+        }
+
+        // Screen 4: Results & Analysis
+        function finishQuiz() {
+            clearExistingTimers();
+            const isPassed = correctCount >= PASS_THRESHOLD;
+
+            if (isPassed) {
+                if (currentLevel === '초수' && unlockedLevel < 2) unlockedLevel = 2;
+                if (currentLevel === '중수' && unlockedLevel < 3) unlockedLevel = 3;
+                updateLevelLocks();
+
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            }
+
+            const card = document.getElementById('result-header-card');
+            const icon = document.getElementById('result-icon');
+            const title = document.getElementById('result-title');
+            const desc = document.getElementById('result-desc');
+
+            if (isPassed) {
+                card.className = "rounded-2xl p-5 border-2 bg-emerald-50 border-emerald-300 space-y-2";
+                icon.innerText = "🎉";
+                title.innerText = "통과 성공!";
+                title.className = "text-3xl font-extrabold text-emerald-600";
+                desc.innerText = `${TOTAL_PROBLEMS}문제 중 ${correctCount}문제를 맞춰서 ${currentLevel} 단계를 통과했어요!`;
+            } else {
+                card.className = "rounded-2xl p-5 border-2 bg-rose-50 border-rose-300 space-y-2";
+                icon.innerText = "😅";
+                title.innerText = "아쉽네요, 다시 도전!";
+                title.className = "text-3xl font-extrabold text-rose-600";
+                desc.innerText = `${correctCount}개 맞췄어요. 25개 이상 맞춰야 다음 단계로 가요!`;
+            }
+
+            const weakList = renderWeaknessReport();
+            showScreen('screen-result');
+
+            sendResultToGoogleSheet(isPassed, weakList.join(", "));
+        }
+
+        function renderWeaknessReport() {
+            const container = document.getElementById('weakness-report-content');
+            let weakTables = [];
+
+            for (let t = 2; t <= 9; t++) {
+                if (tableStats[t].wrong > 0) {
+                    weakTables.push({ table: t, wrong: tableStats[t].wrong, total: tableStats[t].total });
+                }
+            }
+
+            weakTables.sort((a, b) => b.wrong - a.wrong);
+
+            if (weakTables.length === 0) {
+                container.innerHTML = `
+                    <div class="p-3 bg-emerald-100 text-emerald-800 rounded-xl font-bold flex items-center gap-2">
+                        <span>🌟</span> Perfect! 모든 단을 틀리지 않고 완전 정복했어요!
+                    </div>
+                `;
+                return ["없음 (100% 정답)"];
+            }
+
+            let html = `<p class="text-gray-600 mb-1">다음 단의 문제들을 집중 복습해보세요!</p><div class="flex flex-wrap gap-2">`;
+            let weakNames = [];
+
+            weakTables.forEach(item => {
+                html += `
+                    <span class="inline-flex items-center gap-1 bg-rose-100 text-rose-700 px-3 py-1.5 rounded-xl font-bold border border-rose-200">
+                        ⚠️ ${item.table}단 <span class="text-xs bg-white text-rose-800 px-1.5 py-0.5 rounded-md">${item.total}문제 중 ${item.wrong}개 틀림</span>
+                    </span>
+                `;
+                weakNames.push(`${item.table}단`);
+            });
+
+            html += `</div>`;
+            container.innerHTML = html;
+            return weakNames;
+        }
+
+        function sendResultToGoogleSheet(isPassed, weakTablesStr) {
+            const statusDiv = document.getElementById('sheet-sync-status');
+
+            if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL === "YOUR_APPS_SCRIPT_URL_HERE") {
+                statusDiv.innerHTML = `<span class="text-amber-600"><i class="fa-solid fa-triangle-exclamation"></i> 구글 시트 URL이 설정되지 않았습니다.</span>`;
+                return;
+            }
+
+            statusDiv.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 구글 시트에 결과 저장 중...`;
+
+            const payload = {
+                nickname: nickname,
+                level: currentLevel,
+                score: correctCount,
+                wrong: wrongCount,
+                weakTables: weakTablesStr,
+                passed: isPassed
+            };
+
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(() => {
+                statusDiv.innerHTML = `<span class="text-emerald-600 font-bold"><i class="fa-solid fa-cloud-check"></i> 구글 시트에 잘 저장되었습니다!</span>`;
+            }).catch(err => {
+                console.error("Sheet sync error:", err);
+                statusDiv.innerHTML = `<span class="text-rose-500"><i class="fa-solid fa-circle-xmark"></i> 시트 저장 실패 (네트워크 확인)</span>`;
+            });
+        }
+
+        // Global Keyboard Event Support for PC/Laptops
+        document.addEventListener('keydown', (e) => {
+            if (!document.getElementById('screen-quiz').classList.contains('hidden')) {
+                if (e.key >= '0' && e.key <= '9') {
+                    appendNum(parseInt(e.key));
+                } else if (e.key === 'Backspace') {
+                    clearNum();
+                } else if (e.key === 'Enter') {
+                    submitAnswer();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
