@@ -121,6 +121,7 @@
             height: 100%;
             background-color: #ef4444;
             width: 100%;
+            transition: none; /* JS 제어로 직접 조절 */
         }
 
         .quiz-box {
@@ -283,8 +284,8 @@
     let isProcessing = false;
     
     let tableStats = {};
-    let timerTimeout = null;
-    let timerInterval = null;
+    let animFrameId = null; // 프레임 타이머 ID
+    let startTime = 0;
     const TOTAL_PROBLEMS = 30;
     const PASS_THRESHOLD = 25;
 
@@ -338,8 +339,15 @@
         nextProblem();
     }
 
+    function stopTimer() {
+        if (animFrameId) {
+            cancelAnimationFrame(animFrameId);
+            animFrameId = null;
+        }
+    }
+
     function nextProblem() {
-        clearTimer(); // 이전 타이머 및 애니메이션 완전 리셋
+        stopTimer(); // 진행 중인 타이머 즉시 정지
 
         if (problemCount >= TOTAL_PROBLEMS) {
             finishQuiz();
@@ -362,48 +370,49 @@
         document.getElementById('problem-display').innerText = `${currentNum1} × ${num2} = ?`;
         document.getElementById('answer-input').value = '';
 
-        startTimer();
-    }
-
-    function clearTimer() {
-        if (timerTimeout) clearTimeout(timerTimeout);
-        if (timerInterval) clearInterval(timerInterval);
-        
+        // 타이머 바를 우선 100%로 확실히 고정한 후 타이머 시작
         const timerBar = document.getElementById('timer-bar');
-        timerBar.style.transition = 'none';
         timerBar.style.width = '100%';
+
+        // 브라우저가 화면을 새로 그리는 즉시 정밀 타이머 작동
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                startTimer();
+            });
+        });
     }
 
     function startTimer() {
-        clearTimer();
+        stopTimer();
         
         const timerBar = document.getElementById('timer-bar');
-        const maxTimeMs = LEVEL_CONFIG[currentLevel].time * 1000;
-        let elapsedMs = 0;
-        const intervalMs = 50; // 0.05초 단위로 타이머 바 부드럽게 갱신
+        const duration = LEVEL_CONFIG[currentLevel].time * 1000; // ms
+        startTime = performance.now();
 
-        // 1. 프레임 단위로 타이머 바 정확히 감소
-        timerInterval = setInterval(() => {
-            elapsedMs += intervalMs;
-            const remainingPercent = Math.max(0, ((maxTimeMs - elapsedMs) / maxTimeMs) * 100);
-            timerBar.style.width = remainingPercent + '%';
+        function updateTimer(now) {
+            const elapsed = now - startTime;
+            const remainingRatio = Math.max(0, (duration - elapsed) / duration);
+            
+            timerBar.style.width = (remainingRatio * 100) + '%';
 
-            if (elapsedMs >= maxTimeMs) {
-                clearInterval(timerInterval);
+            if (elapsed < duration) {
+                if (!isProcessing) {
+                    animFrameId = requestAnimationFrame(updateTimer);
+                }
+            } else {
+                // 시간 초과 발생시
+                if (!isProcessing) {
+                    isProcessing = true;
+                    wrongCount++;
+                    tableStats[currentNum1].wrong++;
+                    
+                    showFeedback(`⏰ 시간 초과! 정답은 ${currentAns}입니다.`, false);
+                    setTimeout(nextProblem, 1200);
+                }
             }
-        }, intervalMs);
+        }
 
-        // 2. 시간 초과 시 다음 문제로 넘어가는 타임아웃
-        timerTimeout = setTimeout(() => {
-            if (!isProcessing) {
-                isProcessing = true;
-                wrongCount++;
-                tableStats[currentNum1].wrong++;
-                
-                showFeedback(`⏰ 시간 초과! 정답은 ${currentAns}입니다.`, false);
-                setTimeout(nextProblem, 1200);
-            }
-        }, maxTimeMs);
+        animFrameId = requestAnimationFrame(updateTimer);
     }
 
     function appendNum(num) {
@@ -425,7 +434,7 @@
         const inputVal = document.getElementById('answer-input').value;
         if (inputVal === '') return;
 
-        clearTimer(); // 답을 내면 즉시 타이머 멈춤
+        stopTimer(); // 답안 제출 시 타이머 즉시 정지
         isProcessing = true;
         
         const userAns = parseInt(inputVal);
@@ -449,7 +458,7 @@
     }
 
     function finishQuiz() {
-        clearTimer();
+        stopTimer();
         const isPassed = correctCount >= PASS_THRESHOLD;
         
         if (isPassed) {
